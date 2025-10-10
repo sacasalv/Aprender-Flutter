@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:settings_app/preferences_keys.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,6 +13,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _darkMode = false;
   String _language = "es";
   double _fontSize = 16;
+
+  //Cargar esos datos nada mas montar el widget
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _loadPrefences();
+  }
+
+  //persistencia de datos
+  _loadPrefences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      _darkMode = prefs.getBool(PreferencesKeys.darkMode) ?? false;
+      _language = prefs.getString(PreferencesKeys.language) ?? "es";
+      _fontSize = prefs.getDouble(PreferencesKeys.fontSize) ?? 12;
+    });
+  }
+
+  _savePreferences(String key, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (value is bool) {
+      await prefs.setBool(key, value);
+    }
+
+    if (value is String) {
+      await prefs.setString(key, value);
+    }
+
+    if (value is double) {
+      await prefs.setDouble(key, value);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,20 +62,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // });
 
             setState(() => _darkMode = darkMode);
+            _savePreferences(PreferencesKeys.darkMode, darkMode);
           },
         ),
-        DropdownButtonFormField(
-          value: _language,
-          items: [
-            DropdownMenuItem(value: "es", child: Text("Español")),
-            DropdownMenuItem(value: "en", child: Text("Ingles")),
-            DropdownMenuItem(value: " ch", child: Text("Chino")),
-          ],
-          onChanged: (language) {
-            if (language != null) {
-              setState(() => _language = language);
-            }
+        Padding(
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 8,
+            bottom: 8,
+          ),
+          child: DropdownButtonFormField(
+            value: _language,
+            items: [
+              DropdownMenuItem(value: "es", child: Text("Español")),
+              DropdownMenuItem(value: "en", child: Text("Ingles")),
+              DropdownMenuItem(value: " ch", child: Text("Chino")),
+            ],
+            onChanged: (language) {
+              if (language != null) {
+                setState(() => _language = language);
+                _savePreferences(PreferencesKeys.language, language);
+              }
+            },
+            decoration: InputDecoration(label: Text("Idioma")),
+          ),
+        ),
+        Text("Tamaño de la fuente ${_fontSize.toStringAsFixed(0)}"),
+        Slider(
+          value: _fontSize,
+          onChanged: (fontSize) {
+            setState(() {
+              _fontSize = fontSize;
+            });
+            _savePreferences(PreferencesKeys.fontSize, fontSize);
           },
+          min: 14,
+          max: 24,
         ),
       ],
     );
